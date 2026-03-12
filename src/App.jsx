@@ -112,116 +112,183 @@ const EVENTS = [
 
 const AREAS = ["All Areas", "Halifax", "South Shore", "Cape Breton", "Bay of Fundy", "Annapolis Valley", "Acadian Shore"];
 
-function Header({ scrolled }) {
+function useWindowSize() {
+  const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+  useEffect(() => {
+    const handle = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+  }, []);
+  return width;
+}
+
+function Header({ scrolled, isMobile }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <header style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: scrolled ? "rgba(255, 255, 255, 0.97)" : "transparent",
-      backdropFilter: scrolled ? "blur(20px)" : "none",
+      background: scrolled || menuOpen ? "rgba(255, 255, 255, 0.97)" : "transparent",
+      backdropFilter: scrolled || menuOpen ? "blur(20px)" : "none",
       borderBottom: scrolled ? "1px solid rgba(0, 51, 102, 0.08)" : "none",
       transition: "all 0.4s ease",
-      padding: scrolled ? "10px 0" : "18px 0",
+      padding: scrolled ? "10px 0" : "16px 0",
     }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+      <div style={{
+        maxWidth: "1200px", margin: "0 auto", padding: "0 20px",
+        display: "flex", alignItems: "center", justifyContent: "space-between"
+      }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
           <span style={{
-            fontFamily: "'Playfair Display', Georgia, serif", fontSize: "1.5rem",
-            fontWeight: 700, color: scrolled ? "#003366" : "#fff", letterSpacing: "-0.02em",
-            transition: "color 0.4s"
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: isMobile ? "1.25rem" : "1.5rem",
+            fontWeight: 700, color: scrolled || menuOpen ? "#003366" : "#fff",
+            letterSpacing: "-0.02em", transition: "color 0.4s"
           }}>
             what's up
           </span>
           <span style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: "0.65rem", fontWeight: 600,
-            color: scrolled ? "#2a7fff" : "rgba(255,255,255,0.8)",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: isMobile ? "0.55rem" : "0.65rem",
+            fontWeight: 600,
+            color: scrolled || menuOpen ? "#2a7fff" : "rgba(255,255,255,0.8)",
             letterSpacing: "0.25em", textTransform: "uppercase", transition: "color 0.4s"
           }}>
             Nova Scotia
           </span>
         </div>
-        <nav style={{ display: "flex", gap: "28px", alignItems: "center" }}>
+
+        {isMobile ? (
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: "1.5rem", padding: "4px 8px",
+              color: scrolled || menuOpen ? "#003366" : "#fff",
+              transition: "color 0.4s"
+            }}
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
+        ) : (
+          <nav style={{ display: "flex", gap: "28px", alignItems: "center" }}>
+            {["Events", "Venues", "About"].map(item => (
+              <a key={item} href="#" style={{
+                color: scrolled ? "rgba(0,51,102,0.5)" : "rgba(255,255,255,0.7)",
+                textDecoration: "none",
+                fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem",
+                letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 500,
+                transition: "color 0.3s"
+              }}
+              onMouseEnter={e => e.target.style.color = scrolled ? "#003366" : "#fff"}
+              onMouseLeave={e => e.target.style.color = scrolled ? "rgba(0,51,102,0.5)" : "rgba(255,255,255,0.7)"}
+              >{item}</a>
+            ))}
+            <button style={{
+              background: scrolled ? "#003366" : "#fff",
+              color: scrolled ? "#fff" : "#003366",
+              border: "none",
+              padding: "9px 22px", fontFamily: "'DM Sans', sans-serif",
+              fontSize: "0.75rem", letterSpacing: "0.08em", textTransform: "uppercase",
+              fontWeight: 600, cursor: "pointer", borderRadius: "100px",
+              transition: "all 0.4s"
+            }}>Submit Event</button>
+          </nav>
+        )}
+      </div>
+
+      {/* Mobile menu dropdown */}
+      {isMobile && menuOpen && (
+        <div style={{
+          background: "#fff", padding: "16px 20px 24px",
+          borderTop: "1px solid rgba(0,51,102,0.06)",
+          display: "flex", flexDirection: "column", gap: "16px"
+        }}>
           {["Events", "Venues", "About"].map(item => (
             <a key={item} href="#" style={{
-              color: scrolled ? "rgba(0,51,102,0.5)" : "rgba(255,255,255,0.7)",
-              textDecoration: "none",
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem",
-              letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 500,
-              transition: "color 0.3s"
-            }}
-            onMouseEnter={e => e.target.style.color = scrolled ? "#003366" : "#fff"}
-            onMouseLeave={e => e.target.style.color = scrolled ? "rgba(0,51,102,0.5)" : "rgba(255,255,255,0.7)"}
-            >{item}</a>
+              color: "#003366", textDecoration: "none",
+              fontFamily: "'DM Sans', sans-serif", fontSize: "1rem",
+              fontWeight: 500
+            }}>{item}</a>
           ))}
           <button style={{
-            background: scrolled ? "#003366" : "#fff",
-            color: scrolled ? "#fff" : "#003366",
-            border: "none",
-            padding: "9px 22px", fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.75rem", letterSpacing: "0.08em", textTransform: "uppercase",
-            fontWeight: 600, cursor: "pointer", borderRadius: "100px",
-            transition: "all 0.4s"
+            background: "#003366", color: "#fff", border: "none",
+            padding: "12px 24px", fontFamily: "'DM Sans', sans-serif",
+            fontSize: "0.85rem", fontWeight: 600, borderRadius: "100px",
+            cursor: "pointer", width: "100%"
           }}>Submit Event</button>
-        </nav>
-      </div>
+        </div>
+      )}
     </header>
   );
 }
 
-function Hero() {
+function Hero({ isMobile, isTablet }) {
   return (
     <section style={{
-      position: "relative", minHeight: "90vh", display: "flex", alignItems: "center",
+      position: "relative",
+      minHeight: isMobile ? "75vh" : "90vh",
+      display: "flex", alignItems: "center",
       overflow: "hidden"
     }}>
-      {/* Background image */}
       <div style={{
         position: "absolute", inset: 0,
         backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80')",
         backgroundSize: "cover", backgroundPosition: "center 40%",
         filter: "brightness(0.35)"
       }} />
-      {/* Blue overlay */}
       <div style={{
         position: "absolute", inset: 0,
         background: "linear-gradient(165deg, rgba(0,30,70,0.85) 0%, rgba(0,51,102,0.7) 40%, rgba(10,80,150,0.5) 70%, rgba(0,40,90,0.8) 100%)"
       }} />
-      {/* Bottom fade to white */}
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0, height: "200px",
         background: "linear-gradient(to top, #f4f8fc, transparent)"
       }} />
-      {/* Wave SVG */}
       <div style={{ position: "absolute", bottom: "-2px", left: 0, right: 0 }}>
         <svg viewBox="0 0 1440 100" fill="none" style={{ display: "block", width: "100%" }}>
           <path d="M0,60 C320,100 640,20 960,60 C1120,80 1280,50 1440,65 L1440,100 L0,100 Z" fill="#f4f8fc" opacity="0.5"/>
           <path d="M0,75 C360,95 720,55 1080,75 C1260,85 1380,70 1440,75 L1440,100 L0,100 Z" fill="#f4f8fc"/>
         </svg>
       </div>
-      {/* Decorative circles */}
-      <div style={{
-        position: "absolute", top: "12%", right: "6%", width: "400px", height: "400px",
-        border: "1px solid rgba(255,255,255,0.06)", borderRadius: "50%",
-        animation: "float 20s ease-in-out infinite"
-      }} />
-      <div style={{
-        position: "absolute", top: "45%", right: "18%", width: "200px", height: "200px",
-        border: "1px solid rgba(255,255,255,0.04)", borderRadius: "50%",
-        animation: "float 14s ease-in-out infinite reverse"
-      }} />
 
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 2, width: "100%" }}>
+      {!isMobile && (
+        <>
+          <div style={{
+            position: "absolute", top: "12%", right: "6%", width: "400px", height: "400px",
+            border: "1px solid rgba(255,255,255,0.06)", borderRadius: "50%",
+            animation: "float 20s ease-in-out infinite"
+          }} />
+          <div style={{
+            position: "absolute", top: "45%", right: "18%", width: "200px", height: "200px",
+            border: "1px solid rgba(255,255,255,0.04)", borderRadius: "50%",
+            animation: "float 14s ease-in-out infinite reverse"
+          }} />
+        </>
+      )}
+
+      <div style={{
+        maxWidth: "1200px", margin: "0 auto",
+        padding: isMobile ? "0 20px" : "0 24px",
+        position: "relative", zIndex: 2, width: "100%"
+      }}>
         <div style={{ maxWidth: "720px" }}>
           <div style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: "0.7rem", fontWeight: 600,
-            color: "rgba(255,255,255,0.7)", letterSpacing: "0.3em", textTransform: "uppercase",
-            marginBottom: "24px", display: "flex", alignItems: "center", gap: "14px"
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: isMobile ? "0.6rem" : "0.7rem",
+            fontWeight: 600, color: "rgba(255,255,255,0.7)",
+            letterSpacing: "0.3em", textTransform: "uppercase",
+            marginBottom: isMobile ? "16px" : "24px",
+            display: "flex", alignItems: "center", gap: "14px"
           }}>
             <span style={{ display: "inline-block", width: "40px", height: "1.5px", background: "rgba(255,255,255,0.5)" }} />
             Discover Atlantic Canada
           </div>
           <h1 style={{
-            fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(3rem, 6.5vw, 5.5rem)",
-            fontWeight: 700, color: "#fff", lineHeight: 1.05, margin: "0 0 28px 0",
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: isMobile ? "2.5rem" : isTablet ? "3.5rem" : "clamp(3rem, 6.5vw, 5.5rem)",
+            fontWeight: 700, color: "#fff", lineHeight: 1.05,
+            margin: isMobile ? "0 0 20px 0" : "0 0 28px 0",
             letterSpacing: "-0.03em"
           }}>
             What's up in<br />
@@ -232,13 +299,18 @@ function Hero() {
             }}>Nova Scotia</span>
           </h1>
           <p style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: "1.15rem", lineHeight: 1.7,
-            color: "rgba(255,255,255,0.6)", maxWidth: "520px", margin: "0 0 48px 0", fontWeight: 400
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: isMobile ? "1rem" : "1.15rem",
+            lineHeight: 1.7, color: "rgba(255,255,255,0.6)",
+            maxWidth: "520px",
+            margin: isMobile ? "0 0 32px 0" : "0 0 48px 0",
+            fontWeight: 400
           }}>
             From Halifax harbour to the Cabot Trail — find live music, festivals, markets, outdoor adventures, and everything happening across the province.
           </p>
           <div style={{
-            display: "flex", alignItems: "center", gap: "8px", padding: "5px 5px 5px 22px",
+            display: "flex", alignItems: "center", gap: "8px",
+            padding: "5px 5px 5px 18px",
             background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)",
             borderRadius: "100px", maxWidth: "480px",
             backdropFilter: "blur(10px)"
@@ -248,25 +320,31 @@ function Hero() {
               type="text" placeholder="Search events, venues, artists..."
               style={{
                 background: "none", border: "none", color: "#fff", flex: 1,
-                fontFamily: "'DM Sans', sans-serif", fontSize: "0.9rem", padding: "12px 8px",
-                outline: "none"
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: isMobile ? "0.85rem" : "0.9rem",
+                padding: isMobile ? "10px 6px" : "12px 8px",
+                outline: "none", minWidth: 0
               }}
             />
             <button style={{
-              background: "#fff", color: "#003366", border: "none", padding: "11px 28px",
+              background: "#fff", color: "#003366", border: "none",
+              padding: isMobile ? "10px 18px" : "11px 28px",
               fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem", fontWeight: 600,
               letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer",
-              borderRadius: "100px"
+              borderRadius: "100px", whiteSpace: "nowrap"
             }}>Search</button>
           </div>
           <div style={{
-            display: "flex", gap: "32px", marginTop: "52px",
-            fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem",
-            color: "rgba(255,255,255,0.4)", letterSpacing: "0.03em"
+            display: "flex", gap: isMobile ? "20px" : "32px",
+            marginTop: isMobile ? "32px" : "52px",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: isMobile ? "0.7rem" : "0.78rem",
+            color: "rgba(255,255,255,0.4)", letterSpacing: "0.03em",
+            flexWrap: "wrap"
           }}>
-            <span><strong style={{ color: "#fff", fontSize: "1.3rem", fontFamily: "'Playfair Display', serif" }}>240+</strong> events this month</span>
-            <span><strong style={{ color: "#fff", fontSize: "1.3rem", fontFamily: "'Playfair Display', serif" }}>85</strong> venues</span>
-            <span><strong style={{ color: "#fff", fontSize: "1.3rem", fontFamily: "'Playfair Display', serif" }}>12</strong> regions</span>
+            <span><strong style={{ color: "#fff", fontSize: isMobile ? "1.1rem" : "1.3rem", fontFamily: "'Playfair Display', serif" }}>240+</strong> events</span>
+            <span><strong style={{ color: "#fff", fontSize: isMobile ? "1.1rem" : "1.3rem", fontFamily: "'Playfair Display', serif" }}>85</strong> venues</span>
+            <span><strong style={{ color: "#fff", fontSize: isMobile ? "1.1rem" : "1.3rem", fontFamily: "'Playfair Display', serif" }}>12</strong> regions</span>
           </div>
         </div>
       </div>
@@ -283,9 +361,10 @@ function CategoryBar({ active, setActive }) {
       boxShadow: "0 2px 12px rgba(0,51,102,0.04)"
     }}>
       <div style={{
-        maxWidth: "1200px", margin: "0 auto", padding: "0 24px",
+        maxWidth: "1200px", margin: "0 auto", padding: "0 16px",
         display: "flex", gap: "2px", overflowX: "auto",
-        scrollbarWidth: "none"
+        scrollbarWidth: "none",
+        WebkitOverflowScrolling: "touch"
       }}>
         {CATEGORIES.map(cat => (
           <button
@@ -296,14 +375,15 @@ function CategoryBar({ active, setActive }) {
               border: "none",
               borderBottom: active === cat.id ? "2.5px solid #003366" : "2.5px solid transparent",
               color: active === cat.id ? "#003366" : "rgba(0,51,102,0.4)",
-              padding: "16px 18px",
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem",
+              padding: "14px 14px",
+              fontFamily: "'DM Sans', sans-serif", fontSize: "0.76rem",
               letterSpacing: "0.04em", fontWeight: active === cat.id ? 600 : 500,
               cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s",
-              display: "flex", alignItems: "center", gap: "8px"
+              display: "flex", alignItems: "center", gap: "6px",
+              flexShrink: 0
             }}
           >
-            <span style={{ fontSize: "0.9rem" }}>{cat.icon}</span>
+            <span style={{ fontSize: "0.85rem" }}>{cat.icon}</span>
             {cat.label}
           </button>
         ))}
@@ -312,9 +392,11 @@ function CategoryBar({ active, setActive }) {
   );
 }
 
-function EventCard({ event, featured }) {
+function EventCard({ event, featured, isMobile }) {
   const [hovered, setHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+
+  const isFeaturedDisplay = featured && !isMobile;
 
   return (
     <div
@@ -327,14 +409,12 @@ function EventCard({ event, featured }) {
         cursor: "pointer", transition: "all 0.35s ease",
         transform: hovered ? "translateY(-6px)" : "none",
         boxShadow: hovered ? "0 16px 40px rgba(0,51,102,0.12)" : "0 2px 8px rgba(0,51,102,0.04)",
-        gridColumn: featured ? "span 2" : "span 1",
         display: "flex", flexDirection: "column",
         borderRadius: "12px", overflow: "hidden"
       }}
     >
-      {/* Image */}
       <div style={{
-        height: featured ? "260px" : "200px",
+        height: isFeaturedDisplay ? "260px" : isMobile ? "180px" : "200px",
         overflow: "hidden", position: "relative",
         background: "#e8f0f8"
       }}>
@@ -349,22 +429,20 @@ function EventCard({ event, featured }) {
             opacity: imgLoaded ? 1 : 0
           }}
         />
-        {/* Price badge */}
         <div style={{
-          position: "absolute", top: "14px", right: "14px",
+          position: "absolute", top: "12px", right: "12px",
           background: "rgba(255,255,255,0.92)", backdropFilter: "blur(8px)",
-          padding: "5px 14px", borderRadius: "100px",
-          fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem",
-          fontWeight: 600, color: "#003366", letterSpacing: "0.02em"
+          padding: "5px 12px", borderRadius: "100px",
+          fontFamily: "'DM Sans', sans-serif", fontSize: "0.72rem",
+          fontWeight: 600, color: "#003366"
         }}>
           {event.price}
         </div>
-        {/* Area badge */}
         <div style={{
-          position: "absolute", bottom: "14px", left: "14px",
+          position: "absolute", bottom: "12px", left: "12px",
           background: "rgba(0,51,102,0.85)", backdropFilter: "blur(8px)",
-          padding: "5px 14px", borderRadius: "100px",
-          fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem",
+          padding: "5px 12px", borderRadius: "100px",
+          fontFamily: "'DM Sans', sans-serif", fontSize: "0.65rem",
           fontWeight: 600, color: "#fff", letterSpacing: "0.06em",
           textTransform: "uppercase"
         }}>
@@ -372,52 +450,61 @@ function EventCard({ event, featured }) {
         </div>
       </div>
 
-      <div style={{ padding: featured ? "26px" : "20px", flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{
+        padding: isFeaturedDisplay ? "24px" : isMobile ? "16px" : "20px",
+        flex: 1, display: "flex", flexDirection: "column"
+      }}>
         <div style={{
-          fontFamily: "'DM Sans', sans-serif", fontSize: "0.65rem", fontWeight: 600,
+          fontFamily: "'DM Sans', sans-serif", fontSize: "0.63rem", fontWeight: 600,
           color: "#2a7fff", letterSpacing: "0.15em", textTransform: "uppercase",
-          marginBottom: "10px"
+          marginBottom: "8px"
         }}>
           {CATEGORIES.find(c => c.id === event.category)?.label}
         </div>
         <h3 style={{
           fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: featured ? "1.5rem" : "1.15rem",
-          fontWeight: 700, color: "#003366", margin: "0 0 10px 0",
-          lineHeight: 1.25, letterSpacing: "-0.01em"
+          fontSize: isFeaturedDisplay ? "1.45rem" : isMobile ? "1.1rem" : "1.15rem",
+          fontWeight: 700, color: "#003366", margin: "0 0 8px 0",
+          lineHeight: 1.25
         }}>
           {event.title}
         </h3>
         <p style={{
-          fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem",
-          color: "rgba(0,51,102,0.5)", lineHeight: 1.65, margin: "0 0 16px 0",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: isMobile ? "0.82rem" : "0.88rem",
+          color: "rgba(0,51,102,0.5)", lineHeight: 1.65, margin: "0 0 14px 0",
           flex: 1,
-          display: featured ? "block" : "-webkit-box",
-          WebkitLineClamp: featured ? "none" : 3,
+          display: isFeaturedDisplay ? "block" : "-webkit-box",
+          WebkitLineClamp: isFeaturedDisplay ? "none" : 3,
           WebkitBoxOrient: "vertical", overflow: "hidden"
         }}>
           {event.description}
         </p>
         <div style={{
           display: "flex", alignItems: "center", gap: "8px",
-          paddingTop: "14px", borderTop: "1px solid rgba(0,51,102,0.06)"
+          paddingTop: "12px", borderTop: "1px solid rgba(0,51,102,0.06)"
         }}>
           <div style={{
-            width: "36px", height: "36px", borderRadius: "8px",
+            width: "34px", height: "34px", borderRadius: "8px",
             background: "linear-gradient(135deg, #e8f1ff, #d4e6ff)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "0.85rem", flexShrink: 0
+            fontSize: "0.8rem", flexShrink: 0
           }}>📅</div>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <span style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem",
-              color: "#003366", fontWeight: 600, display: "block"
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: isMobile ? "0.78rem" : "0.82rem",
+              color: "#003366", fontWeight: 600, display: "block",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
             }}>
               {event.date} <span style={{ color: "rgba(0,51,102,0.25)", margin: "0 3px" }}>·</span> {event.time}
             </span>
             <span style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem",
-              color: "rgba(0,51,102,0.4)"
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: isMobile ? "0.7rem" : "0.75rem",
+              color: "rgba(0,51,102,0.4)",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              display: "block"
             }}>
               {event.location}
             </span>
@@ -428,9 +515,12 @@ function EventCard({ event, featured }) {
   );
 }
 
-function AreaFilter({ active, setActive }) {
+function AreaFilter({ active, setActive, isMobile }) {
   return (
-    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+    <div style={{
+      display: "flex", gap: "6px", flexWrap: "wrap",
+      ...(isMobile ? { width: "100%" } : {})
+    }}>
       {AREAS.map(area => (
         <button
           key={area}
@@ -440,8 +530,10 @@ function AreaFilter({ active, setActive }) {
             border: "1px solid",
             borderColor: active === area ? "#003366" : "rgba(0,51,102,0.12)",
             color: active === area ? "#fff" : "rgba(0,51,102,0.55)",
-            padding: "8px 18px", fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.04em",
+            padding: isMobile ? "7px 14px" : "8px 18px",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: isMobile ? "0.7rem" : "0.75rem",
+            fontWeight: 500, letterSpacing: "0.04em",
             cursor: "pointer", borderRadius: "100px", transition: "all 0.25s"
           }}
         >{area}</button>
@@ -450,11 +542,13 @@ function AreaFilter({ active, setActive }) {
   );
 }
 
-function Newsletter() {
+function Newsletter({ isMobile }) {
   return (
     <section style={{
       background: "linear-gradient(135deg, #003366, #004d99)",
-      borderRadius: "16px", padding: "64px 56px", textAlign: "center",
+      borderRadius: isMobile ? "12px" : "16px",
+      padding: isMobile ? "40px 24px" : "64px 56px",
+      textAlign: "center",
       margin: "60px 0", position: "relative", overflow: "hidden"
     }}>
       <div style={{
@@ -462,44 +556,52 @@ function Newsletter() {
         backgroundImage: "radial-gradient(circle at 2px 2px, #fff 1px, transparent 0)",
         backgroundSize: "30px 30px"
       }} />
-      <div style={{
-        position: "absolute", top: "-40px", right: "-40px", width: "200px", height: "200px",
-        border: "1px solid rgba(255,255,255,0.08)", borderRadius: "50%"
-      }} />
       <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{
           fontFamily: "'DM Sans', sans-serif", fontSize: "0.65rem", fontWeight: 600,
-          color: "rgba(255,255,255,0.6)", letterSpacing: "0.25em", textTransform: "uppercase", marginBottom: "16px"
+          color: "rgba(255,255,255,0.6)", letterSpacing: "0.25em", textTransform: "uppercase",
+          marginBottom: "14px"
         }}>
           Stay in the loop
         </div>
         <h2 style={{
-          fontFamily: "'Playfair Display', Georgia, serif", fontSize: "2.2rem",
-          fontWeight: 700, color: "#fff", margin: "0 0 12px 0", letterSpacing: "-0.02em"
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: isMobile ? "1.6rem" : "2.2rem",
+          fontWeight: 700, color: "#fff", margin: "0 0 12px 0"
         }}>
           Never miss what's happening
         </h2>
         <p style={{
-          fontFamily: "'DM Sans', sans-serif", fontSize: "0.95rem",
-          color: "rgba(255,255,255,0.55)", maxWidth: "440px", margin: "0 auto 32px", lineHeight: 1.6
+          fontFamily: "'DM Sans', sans-serif", fontSize: "0.92rem",
+          color: "rgba(255,255,255,0.55)", maxWidth: "440px", margin: "0 auto 28px",
+          lineHeight: 1.6
         }}>
           Weekly picks, hidden gems, and last-minute events — straight to your inbox every Thursday.
         </p>
         <div style={{
-          display: "flex", gap: "8px", maxWidth: "440px", margin: "0 auto",
-          background: "rgba(255,255,255,0.1)", padding: "5px",
-          borderRadius: "100px", border: "1px solid rgba(255,255,255,0.12)"
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          gap: "8px", maxWidth: "440px", margin: "0 auto",
+          background: isMobile ? "transparent" : "rgba(255,255,255,0.1)",
+          padding: isMobile ? "0" : "5px",
+          borderRadius: "100px",
+          border: isMobile ? "none" : "1px solid rgba(255,255,255,0.12)"
         }}>
           <input
             type="email" placeholder="your@email.com"
             style={{
-              background: "none", border: "none", color: "#fff", flex: 1,
+              background: isMobile ? "rgba(255,255,255,0.1)" : "none",
+              border: isMobile ? "1px solid rgba(255,255,255,0.15)" : "none",
+              color: "#fff", flex: 1,
               fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem",
-              padding: "12px 18px", outline: "none"
+              padding: isMobile ? "14px 18px" : "12px 18px",
+              outline: "none",
+              borderRadius: isMobile ? "100px" : "0"
             }}
           />
           <button style={{
-            background: "#fff", color: "#003366", border: "none", padding: "12px 32px",
+            background: "#fff", color: "#003366", border: "none",
+            padding: isMobile ? "14px 32px" : "12px 32px",
             fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem", fontWeight: 600,
             letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer",
             borderRadius: "100px"
@@ -510,15 +612,21 @@ function Newsletter() {
   );
 }
 
-function Footer() {
+function Footer({ isMobile }) {
   return (
     <footer style={{
-      background: "#003366", padding: "56px 0 40px", marginTop: "40px"
+      background: "#003366", padding: isMobile ? "40px 0 32px" : "56px 0 40px",
+      marginTop: "40px"
     }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "48px", marginBottom: "48px" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr",
+          gap: isMobile ? "32px" : "48px",
+          marginBottom: isMobile ? "32px" : "48px"
+        }}>
           <div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "16px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "14px" }}>
               <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "1.4rem", fontWeight: 700, color: "#fff" }}>
                 what's up
               </span>
@@ -542,18 +650,19 @@ function Footer() {
               <h4 style={{
                 fontFamily: "'DM Sans', sans-serif", fontSize: "0.65rem", fontWeight: 600,
                 color: "#88c8ff", letterSpacing: "0.2em", textTransform: "uppercase",
-                marginBottom: "20px"
+                marginBottom: "16px"
               }}>{section.title}</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{
+                display: "flex",
+                flexDirection: isMobile ? "row" : "column",
+                flexWrap: isMobile ? "wrap" : "nowrap",
+                gap: isMobile ? "8px 16px" : "12px"
+              }}>
                 {section.links.map(link => (
                   <a key={link} href="#" style={{
                     color: "rgba(255,255,255,0.4)", textDecoration: "none",
-                    fontFamily: "'DM Sans', sans-serif", fontSize: "0.84rem",
-                    transition: "color 0.2s"
-                  }}
-                  onMouseEnter={e => e.target.style.color = "#fff"}
-                  onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
-                  >{link}</a>
+                    fontFamily: "'DM Sans', sans-serif", fontSize: "0.84rem"
+                  }}>{link}</a>
                 ))}
               </div>
             </div>
@@ -561,7 +670,11 @@ function Footer() {
         </div>
         <div style={{
           borderTop: "1px solid rgba(255,255,255,0.08)",
-          paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center"
+          paddingTop: "20px",
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center",
+          gap: "8px"
         }}>
           <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem", color: "rgba(255,255,255,0.25)" }}>
             © 2026 What's Up Nova Scotia. All rights reserved.
@@ -579,12 +692,21 @@ export default function WhatsUpNovaScotia() {
   const [category, setCategory] = useState("all");
   const [area, setArea] = useState("All Areas");
   const [scrolled, setScrolled] = useState(false);
+  const width = useWindowSize();
+
+  const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1024;
 
   useEffect(() => {
     const link = document.createElement("link");
     link.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
+
+    const meta = document.createElement("meta");
+    meta.name = "viewport";
+    meta.content = "width=device-width, initial-scale=1";
+    document.head.appendChild(meta);
 
     const handleScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", handleScroll);
@@ -600,6 +722,9 @@ export default function WhatsUpNovaScotia() {
   const featuredEvents = filtered.filter(e => e.featured);
   const regularEvents = filtered.filter(e => !e.featured);
 
+  const gridCols = isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
+  const featuredCols = isMobile ? "1fr" : "repeat(2, 1fr)";
+
   return (
     <div style={{ background: "#f4f8fc", minHeight: "100vh" }}>
       <style>{`
@@ -614,20 +739,25 @@ export default function WhatsUpNovaScotia() {
         input:focus { outline: none; }
       `}</style>
 
-      <Header scrolled={scrolled} />
-      <Hero />
+      <Header scrolled={scrolled} isMobile={isMobile} />
+      <Hero isMobile={isMobile} isTablet={isTablet} />
       <CategoryBar active={category} setActive={setCategory} />
 
-      <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "40px 24px" }}>
-        {/* Controls */}
+      <main style={{
+        maxWidth: "1200px", margin: "0 auto",
+        padding: isMobile ? "28px 16px" : "40px 24px"
+      }}>
         <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "flex-end",
-          marginBottom: "32px", flexWrap: "wrap", gap: "16px"
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "flex-end",
+          marginBottom: "28px", gap: "16px"
         }}>
           <div>
             <h2 style={{
-              fontFamily: "'Playfair Display', Georgia, serif", fontSize: "1.8rem",
-              fontWeight: 700, color: "#003366", margin: "0 0 4px 0", letterSpacing: "-0.02em"
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: isMobile ? "1.5rem" : "1.8rem",
+              fontWeight: 700, color: "#003366", margin: "0 0 4px 0"
             }}>
               {category === "all" ? "All Events" : CATEGORIES.find(c => c.id === category)?.label}
             </h2>
@@ -638,35 +768,33 @@ export default function WhatsUpNovaScotia() {
               {filtered.length} event{filtered.length !== 1 ? "s" : ""} found
             </p>
           </div>
-          <AreaFilter active={area} setActive={setArea} />
+          <AreaFilter active={area} setActive={setArea} isMobile={isMobile} />
         </div>
 
-        {/* Featured */}
         {featuredEvents.length > 0 && (
           <div style={{
-            display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "24px", marginBottom: "24px"
+            display: "grid", gridTemplateColumns: featuredCols,
+            gap: isMobile ? "16px" : "24px", marginBottom: isMobile ? "16px" : "24px"
           }}>
             {featuredEvents.map(event => (
-              <EventCard key={event.id} event={event} featured={true} />
+              <EventCard key={event.id} event={event} featured={true} isMobile={isMobile} />
             ))}
           </div>
         )}
 
-        {/* Regular */}
         {regularEvents.length > 0 && (
           <div style={{
-            display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "24px"
+            display: "grid", gridTemplateColumns: gridCols,
+            gap: isMobile ? "16px" : "24px"
           }}>
             {regularEvents.map(event => (
-              <EventCard key={event.id} event={event} featured={false} />
+              <EventCard key={event.id} event={event} featured={false} isMobile={isMobile} />
             ))}
           </div>
         )}
 
         {filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "80px 0" }}>
+          <div style={{ textAlign: "center", padding: "60px 0" }}>
             <div style={{ fontSize: "3rem", marginBottom: "16px", opacity: 0.4 }}>⛵</div>
             <h3 style={{
               fontFamily: "'Playfair Display', Georgia, serif", fontSize: "1.4rem",
@@ -679,9 +807,9 @@ export default function WhatsUpNovaScotia() {
           </div>
         )}
 
-        <Newsletter />
+        <Newsletter isMobile={isMobile} />
       </main>
-      <Footer />
+      <Footer isMobile={isMobile} />
     </div>
   );
 }
