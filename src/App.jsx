@@ -137,6 +137,18 @@ const EVENTS = [
 
 const AREA_LIST = [...new Set(EVENTS.map(e => e.area))];
 
+const MONTH_ORDER = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+function sortByDate(events) {
+  return [...events].sort((a, b) => {
+    const parse = d => {
+      const m = d.match(/^([A-Za-z]+)\s*(\d+)?/);
+      if (!m) return 999;
+      return (MONTH_ORDER[m[1]] || 99) * 100 + (parseInt(m[2]) || 0);
+    };
+    return parse(a.date) - parse(b.date);
+  });
+}
+
 /* ============ HOOKS & STYLES ============ */
 function useWindowSize() {
   const [w, setW] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
@@ -321,7 +333,41 @@ function RegionsPage({ isMobile, isTablet, onSelectRegion }) {
 function SubmitPage({ isMobile, onBack }) {
   const [form, setForm] = useState({ name: "", venue: "", date: "", startTime: "", endTime: "", location: "", area: "", category: "", price: "", description: "", organizer: "", contact: "", website: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!form.name || !form.venue || !form.date || !form.startTime || !form.location || !form.area || !form.category || !form.description) {
+      alert("Please fill in all required fields *"); return;
+    }
+    setSending(true); setError("");
+    try {
+      const res = await fetch("https://formsubmit.co/ajax/contactwhatsupns@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          _subject: "New Event Submission: " + form.name,
+          "Event Name": form.name,
+          "Venue": form.venue,
+          "Date": form.date,
+          "Start Time": form.startTime,
+          "End Time": form.endTime || "N/A",
+          "Address": form.location,
+          "Region": form.area,
+          "Category": form.category,
+          "Price": form.price || "N/A",
+          "Description": form.description,
+          "Organizer": form.organizer || "N/A",
+          "Contact Email": form.contact || "N/A",
+          "Website": form.website || "N/A",
+        })
+      });
+      if (res.ok) { setSubmitted(true); } else { setError("Something went wrong. Please try again."); }
+    } catch (e) { setError("Could not send. Please check your connection and try again."); }
+    setSending(false);
+  };
+
   if (submitted) return <div style={{ maxWidth: "640px", margin: "0 auto", padding: isMobile ? "60px 20px" : "80px 24px", textAlign: "center" }}><div style={{ fontSize: "3rem", marginBottom: "20px" }}>🎉</div><h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: "2rem", fontWeight: 700, color: "#003366", margin: "0 0 12px 0" }}>Event Submitted!</h1><p style={{ fontFamily: "'DM Sans'", fontSize: "1rem", color: "rgba(0,51,102,0.5)", margin: "0 0 32px 0" }}>Thank you! Our team will review it shortly.</p><button onClick={onBack} style={{ background: "#003366", color: "#fff", border: "none", padding: "14px 32px", borderRadius: "100px", fontFamily: "'DM Sans'", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer" }}>Back to Events</button></div>;
   return <div style={{ maxWidth: "700px", margin: "0 auto", padding: isMobile ? "24px 16px" : "40px 24px" }}>
     <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: isMobile ? "1.8rem" : "2.2rem", fontWeight: 700, color: "#003366", margin: "0 0 8px 0" }}>Submit an Event</h1>
@@ -333,7 +379,8 @@ function SubmitPage({ isMobile, onBack }) {
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "20px" }}><div><label style={labelStyle}>Category *</label><select value={form.category} onChange={e => set("category", e.target.value)} style={{ ...inputStyle(isMobile), appearance: "auto" }}><option value="">Select</option>{CATEGORIES.filter(c => c.id !== "all").map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></div><div><label style={labelStyle}>Price</label><input value={form.price} onChange={e => set("price", e.target.value)} placeholder="e.g. $25 or Free" style={inputStyle(isMobile)} /></div></div>
       <div><label style={labelStyle}>Description *</label><textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="Tell people about your event..." rows={5} style={{ ...inputStyle(isMobile), resize: "vertical", fontFamily: "'DM Sans'" }} /></div>
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: "20px" }}><div><label style={labelStyle}>Organizer</label><input value={form.organizer} onChange={e => set("organizer", e.target.value)} style={inputStyle(isMobile)} /></div><div><label style={labelStyle}>Email</label><input value={form.contact} onChange={e => set("contact", e.target.value)} type="email" style={inputStyle(isMobile)} /></div><div><label style={labelStyle}>Website</label><input value={form.website} onChange={e => set("website", e.target.value)} type="url" style={inputStyle(isMobile)} /></div></div>
-      <button onClick={() => { if (form.name && form.venue && form.date && form.startTime && form.location && form.area && form.category && form.description) { const body = `Event Name: ${form.name}%0AVenue: ${form.venue}%0ADate: ${form.date}%0AStart Time: ${form.startTime}%0AEnd Time: ${form.endTime || "N/A"}%0AAddress: ${form.location}%0ARegion: ${form.area}%0ACategory: ${form.category}%0APrice: ${form.price || "N/A"}%0AOrganizer: ${form.organizer || "N/A"}%0AContact Email: ${form.contact || "N/A"}%0AWebsite: ${form.website || "N/A"}%0A%0ADescription:%0A${encodeURIComponent(form.description)}`; window.open(`mailto:contactwhatsupns@gmail.com?subject=New Event Submission: ${encodeURIComponent(form.name)}&body=${body}`, "_self"); setSubmitted(true); } else alert("Please fill in all required fields *"); }} style={{ background: "#003366", color: "#fff", border: "none", padding: "16px 32px", borderRadius: "12px", fontFamily: "'DM Sans'", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer", marginTop: "8px", alignSelf: "flex-start" }}>Submit Event</button>
+      {error && <p style={{ fontFamily: "'DM Sans'", fontSize: "0.88rem", color: "#cc3333", margin: 0 }}>{error}</p>}
+      <button onClick={handleSubmit} disabled={sending} style={{ background: sending ? "#667" : "#003366", color: "#fff", border: "none", padding: "16px 32px", borderRadius: "12px", fontFamily: "'DM Sans'", fontSize: "0.9rem", fontWeight: 600, cursor: sending ? "wait" : "pointer", marginTop: "8px", alignSelf: "flex-start", opacity: sending ? 0.7 : 1 }}>{sending ? "Sending..." : "Submit Event"}</button>
     </div>
   </div>;
 }
@@ -415,8 +462,9 @@ export default function App() {
     return cm && am && mm && sm;
   });
 
-  const feat = filtered.filter(e => e.featured);
-  const reg = filtered.filter(e => !e.featured);
+  const sorted = sortByDate(filtered);
+  const feat = sorted.filter(e => e.featured);
+  const reg = sorted.filter(e => !e.featured);
   const gc = isMobile ? "1fr" : isTablet ? "repeat(2,1fr)" : "repeat(3,1fr)";
 
   return <div style={{ background: "#f4f8fc", minHeight: "100vh", width: "100%", overflowX: "hidden" }}>
