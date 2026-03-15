@@ -156,15 +156,38 @@ const EVENTS = [
 const AREA_LIST = [...new Set(EVENTS.map(e => e.area))];
 
 const MONTH_ORDER = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
-function sortByDate(events) {
-  return [...events].sort((a, b) => {
-    const parse = d => {
-      const m = d.match(/^([A-Za-z]+)\s*(\d+)?/);
-      if (!m) return 999;
-      return (MONTH_ORDER[m[1]] || 99) * 100 + (parseInt(m[2]) || 0);
-    };
-    return parse(a.date) - parse(b.date);
+function parseEventDate(d) {
+  const m = d.match(/^([A-Za-z]+)\s*(\d+)?/);
+  if (!m) return 999;
+  return (MONTH_ORDER[m[1]] || 99) * 100 + (parseInt(m[2]) || 0);
+}
+function filterPastEvents(events) {
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1;
+  const currentDay = today.getDate();
+  const todayVal = currentMonth * 100 + currentDay;
+  return events.filter(e => {
+    // For date ranges like "Mar 13–22" or "Jul–Aug", get the END date
+    const endMatch = e.date.match(/[–-]\s*(?:([A-Za-z]+)\s+)?(\d+)$/);
+    const startMatch = e.date.match(/^([A-Za-z]+)\s*(\d+)?/);
+    if (!startMatch) return true;
+    const startMonthNum = MONTH_ORDER[startMatch[1]] || 99;
+    // If there's an end date, use it; otherwise use start date
+    let endVal;
+    if (endMatch && endMatch[2]) {
+      const endMonth = endMatch[1] ? (MONTH_ORDER[endMatch[1]] || startMonthNum) : startMonthNum;
+      endVal = endMonth * 100 + parseInt(endMatch[2]);
+    } else if (startMatch[2]) {
+      endVal = startMonthNum * 100 + parseInt(startMatch[2]);
+    } else {
+      // Month only like "Jun–Sep (Daily)" — show if we're in or before that range
+      endVal = startMonthNum * 100 + 31;
+    }
+    return endVal >= todayVal;
   });
+}
+function sortByDate(events) {
+  return [...events].sort((a, b) => parseEventDate(a.date) - parseEventDate(b.date));
 }
 
 /* ============ HOOKS & STYLES ============ */
@@ -226,7 +249,7 @@ function Hero({ isMobile, onSearch, onNav }) {
             <button onClick={go} style={{ background: "#fff", color: "#003366", border: "none", padding: isMobile ? "10px 18px" : "11px 28px", fontFamily: "'DM Sans'", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", borderRadius: "100px", whiteSpace: "nowrap" }}>Search</button>
           </div>
           <div style={{ display: "flex", gap: isMobile ? "20px" : "32px", marginTop: isMobile ? "32px" : "52px", fontFamily: "'DM Sans'", fontSize: isMobile ? "0.7rem" : "0.78rem", color: "rgba(255,255,255,0.4)", flexWrap: "wrap" }}>
-            <span onClick={() => onNav("events")} style={{ cursor: "pointer" }}><strong style={{ color: "#fff", fontSize: isMobile ? "1.1rem" : "1.3rem", fontFamily: "'Playfair Display',serif" }}>{EVENTS.length}</strong> events</span>
+            <span onClick={() => onNav("events")} style={{ cursor: "pointer" }}><strong style={{ color: "#fff", fontSize: isMobile ? "1.1rem" : "1.3rem", fontFamily: "'Playfair Display',serif" }}>{filterPastEvents(EVENTS).length}</strong> events</span>
             <span onClick={() => onNav("venues")} style={{ cursor: "pointer" }}><strong style={{ color: "#fff", fontSize: isMobile ? "1.1rem" : "1.3rem", fontFamily: "'Playfair Display',serif" }}>{VENUES.length}</strong> venues</span>
             <span onClick={() => onNav("regions")} style={{ cursor: "pointer" }}><strong style={{ color: "#fff", fontSize: isMobile ? "1.1rem" : "1.3rem", fontFamily: "'Playfair Display',serif" }}>{REGIONS.length}</strong> regions</span>
           </div>
@@ -352,39 +375,39 @@ function SubmitPage({ isMobile, onBack }) {
   const [form, setForm] = useState({ name: "", venue: "", date: "", startTime: "", endTime: "", location: "", area: "", category: "", price: "", description: "", organizer: "", contact: "", website: "" });
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
-  const formRef = useRef(null);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name || !form.venue || !form.date || !form.startTime || !form.location || !form.area || !form.category || !form.description) {
       alert("Please fill in all required fields *"); return;
     }
     setSending(true);
-    if (formRef.current) formRef.current.submit();
-    setTimeout(() => { setSubmitted(true); setSending(false); }, 2000);
+    try {
+      const fd = new FormData();
+      fd.append("_subject", "New Event Submission: " + form.name);
+      fd.append("_captcha", "false");
+      fd.append("_template", "table");
+      fd.append("Event Name", form.name);
+      fd.append("Venue", form.venue);
+      fd.append("Date", form.date);
+      fd.append("Start Time", form.startTime);
+      fd.append("End Time", form.endTime || "N/A");
+      fd.append("Address", form.location);
+      fd.append("Region", form.area);
+      fd.append("Category", form.category);
+      fd.append("Price", form.price || "N/A");
+      fd.append("Description", form.description);
+      fd.append("Organizer", form.organizer || "N/A");
+      fd.append("Contact Email", form.contact || "N/A");
+      fd.append("Website", form.website || "N/A");
+      await fetch("https://formsubmit.co/contactwhatsupns@gmail.com", { method: "POST", body: fd, mode: "no-cors" });
+      setSubmitted(true);
+    } catch (e) { alert("Something went wrong. Please try again."); }
+    setSending(false);
   };
 
   if (submitted) return <div style={{ maxWidth: "640px", margin: "0 auto", padding: isMobile ? "60px 20px" : "80px 24px", textAlign: "center" }}><div style={{ fontSize: "3rem", marginBottom: "20px" }}>🎉</div><h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: "2rem", fontWeight: 700, color: "#003366", margin: "0 0 12px 0" }}>Event Submitted!</h1><p style={{ fontFamily: "'DM Sans'", fontSize: "1rem", color: "rgba(0,51,102,0.5)", margin: "0 0 32px 0" }}>Thank you! Our team will review it shortly.</p><button onClick={onBack} style={{ background: "#003366", color: "#fff", border: "none", padding: "14px 32px", borderRadius: "100px", fontFamily: "'DM Sans'", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer" }}>Back to Events</button></div>;
   return <div style={{ maxWidth: "700px", margin: "0 auto", padding: isMobile ? "24px 16px" : "40px 24px" }}>
-    <iframe name="hidden_iframe" id="hidden_iframe" style={{ display: "none" }} />
-    <form ref={formRef} action="https://formsubmit.co/contactwhatsupns@gmail.com" method="POST" target="hidden_iframe" style={{ display: "none" }}>
-      <input type="hidden" name="_subject" value={"New Event Submission: " + form.name} />
-      <input type="hidden" name="_captcha" value="false" />
-      <input type="hidden" name="_template" value="table" />
-      <input type="text" name="Event Name" value={form.name} readOnly />
-      <input type="text" name="Venue" value={form.venue} readOnly />
-      <input type="text" name="Date" value={form.date} readOnly />
-      <input type="text" name="Start Time" value={form.startTime} readOnly />
-      <input type="text" name="End Time" value={form.endTime || "N/A"} readOnly />
-      <input type="text" name="Address" value={form.location} readOnly />
-      <input type="text" name="Region" value={form.area} readOnly />
-      <input type="text" name="Category" value={form.category} readOnly />
-      <input type="text" name="Price" value={form.price || "N/A"} readOnly />
-      <textarea name="Description" value={form.description} readOnly />
-      <input type="text" name="Organizer" value={form.organizer || "N/A"} readOnly />
-      <input type="text" name="Contact Email" value={form.contact || "N/A"} readOnly />
-      <input type="text" name="Website" value={form.website || "N/A"} readOnly />
-    </form>
     <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: isMobile ? "1.8rem" : "2.2rem", fontWeight: 700, color: "#003366", margin: "0 0 8px 0" }}>Submit an Event</h1>
     <p style={{ fontFamily: "'DM Sans'", fontSize: "0.95rem", color: "rgba(0,51,102,0.45)", margin: "0 0 36px 0" }}>Share your event with the Nova Scotia community.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -476,7 +499,7 @@ export default function App() {
     return cm && am && mm && sm;
   });
 
-  const sorted = sortByDate(filtered);
+  const sorted = sortByDate(filterPastEvents(filtered));
   const feat = sorted.filter(e => e.featured);
   const reg = sorted.filter(e => !e.featured);
   const gc = isMobile ? "1fr" : isTablet ? "repeat(2,1fr)" : "repeat(3,1fr)";
