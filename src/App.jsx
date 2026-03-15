@@ -372,53 +372,34 @@ function RegionsPage({ isMobile, isTablet, onSelectRegion }) {
 
 /* ============ SUBMIT PAGE ============ */
 function SubmitPage({ isMobile, onBack }) {
-  const [form, setForm] = useState({ name: "", venue: "", date: "", startTime: "", endTime: "", location: "", area: "", category: "", price: "", description: "", organizer: "", contact: "", website: "" });
-  const [submitted, setSubmitted] = useState(false);
-  const [sending, setSending] = useState(false);
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const formRef = useRef(null);
+  const [valid, setValid] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!form.name || !form.venue || !form.date || !form.startTime || !form.location || !form.area || !form.category || !form.description) {
-      alert("Please fill in all required fields *"); return;
-    }
-    setSending(true);
-    try {
-      const fd = new FormData();
-      fd.append("_subject", "New Event Submission: " + form.name);
-      fd.append("_captcha", "false");
-      fd.append("_template", "table");
-      fd.append("Event Name", form.name);
-      fd.append("Venue", form.venue);
-      fd.append("Date", form.date);
-      fd.append("Start Time", form.startTime);
-      fd.append("End Time", form.endTime || "N/A");
-      fd.append("Address", form.location);
-      fd.append("Region", form.area);
-      fd.append("Category", form.category);
-      fd.append("Price", form.price || "N/A");
-      fd.append("Description", form.description);
-      fd.append("Organizer", form.organizer || "N/A");
-      fd.append("Contact Email", form.contact || "N/A");
-      fd.append("Website", form.website || "N/A");
-      await fetch("https://formsubmit.co/contactwhatsupns@gmail.com", { method: "POST", body: fd, mode: "no-cors" });
-      setSubmitted(true);
-    } catch (e) { alert("Something went wrong. Please try again."); }
-    setSending(false);
+  const checkValid = () => {
+    if (!formRef.current) return;
+    const f = formRef.current;
+    setValid(f["Event Name"].value && f["Venue"].value && f["Date"].value && f["Start Time"].value && f["Address"].value && f["Region"].value && f["Category"].value && f["Description"].value);
   };
 
-  if (submitted) return <div style={{ maxWidth: "640px", margin: "0 auto", padding: isMobile ? "60px 20px" : "80px 24px", textAlign: "center" }}><div style={{ fontSize: "3rem", marginBottom: "20px" }}>🎉</div><h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: "2rem", fontWeight: 700, color: "#003366", margin: "0 0 12px 0" }}>Event Submitted!</h1><p style={{ fontFamily: "'DM Sans'", fontSize: "1rem", color: "rgba(0,51,102,0.5)", margin: "0 0 32px 0" }}>Thank you! Our team will review it shortly.</p><button onClick={onBack} style={{ background: "#003366", color: "#fff", border: "none", padding: "14px 32px", borderRadius: "100px", fontFamily: "'DM Sans'", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer" }}>Back to Events</button></div>;
+  const is = (m) => ({ width: "100%", background: "#fff", border: "1px solid rgba(0,51,102,0.12)", borderRadius: "10px", padding: m ? "12px 14px" : "14px 16px", fontFamily: "'DM Sans',sans-serif", fontSize: "0.9rem", color: "#003366", outline: "none" });
+  const ls = { fontFamily: "'DM Sans',sans-serif", fontSize: "0.78rem", fontWeight: 600, color: "#003366", marginBottom: "6px", display: "block" };
+
   return <div style={{ maxWidth: "700px", margin: "0 auto", padding: isMobile ? "24px 16px" : "40px 24px" }}>
     <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: isMobile ? "1.8rem" : "2.2rem", fontWeight: 700, color: "#003366", margin: "0 0 8px 0" }}>Submit an Event</h1>
     <p style={{ fontFamily: "'DM Sans'", fontSize: "0.95rem", color: "rgba(0,51,102,0.45)", margin: "0 0 36px 0" }}>Share your event with the Nova Scotia community.</p>
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "20px" }}><div><label style={labelStyle}>Event Name *</label><input value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Halifax Jazz Festival" style={inputStyle(isMobile)} /></div><div><label style={labelStyle}>Venue Name *</label><input value={form.venue} onChange={e => set("venue", e.target.value)} placeholder="e.g. The Carleton" style={inputStyle(isMobile)} /></div></div>
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: "20px" }}><div><label style={labelStyle}>Date(s) *</label><input value={form.date} onChange={e => set("date", e.target.value)} type="date" style={inputStyle(isMobile)} /></div><div><label style={labelStyle}>Start Time *</label><input value={form.startTime} onChange={e => set("startTime", e.target.value)} type="time" style={inputStyle(isMobile)} /></div><div><label style={labelStyle}>End Time</label><input value={form.endTime} onChange={e => set("endTime", e.target.value)} type="time" style={inputStyle(isMobile)} /></div></div>
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "20px" }}><div><label style={labelStyle}>Full Address *</label><input value={form.location} onChange={e => set("location", e.target.value)} placeholder="e.g. 1685 Argyle St, Halifax" style={inputStyle(isMobile)} /></div><div><label style={labelStyle}>Region *</label><select value={form.area} onChange={e => set("area", e.target.value)} style={{ ...inputStyle(isMobile), appearance: "auto" }}><option value="">Select</option>{REGIONS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div></div>
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "20px" }}><div><label style={labelStyle}>Category *</label><select value={form.category} onChange={e => set("category", e.target.value)} style={{ ...inputStyle(isMobile), appearance: "auto" }}><option value="">Select</option>{CATEGORIES.filter(c => c.id !== "all").map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></div><div><label style={labelStyle}>Price</label><input value={form.price} onChange={e => set("price", e.target.value)} placeholder="e.g. $25 or Free" style={inputStyle(isMobile)} /></div></div>
-      <div><label style={labelStyle}>Description *</label><textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="Tell people about your event..." rows={5} style={{ ...inputStyle(isMobile), resize: "vertical", fontFamily: "'DM Sans'" }} /></div>
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: "20px" }}><div><label style={labelStyle}>Organizer</label><input value={form.organizer} onChange={e => set("organizer", e.target.value)} style={inputStyle(isMobile)} /></div><div><label style={labelStyle}>Email</label><input value={form.contact} onChange={e => set("contact", e.target.value)} type="email" style={inputStyle(isMobile)} /></div><div><label style={labelStyle}>Website</label><input value={form.website} onChange={e => set("website", e.target.value)} type="url" style={inputStyle(isMobile)} /></div></div>
-      <button onClick={handleSubmit} disabled={sending} style={{ background: sending ? "#667" : "#003366", color: "#fff", border: "none", padding: "16px 32px", borderRadius: "12px", fontFamily: "'DM Sans'", fontSize: "0.9rem", fontWeight: 600, cursor: sending ? "wait" : "pointer", marginTop: "8px", alignSelf: "flex-start", opacity: sending ? 0.7 : 1 }}>{sending ? "Sending..." : "Submit Event"}</button>
-    </div>
+    <form ref={formRef} action="https://formsubmit.co/contactwhatsupns@gmail.com" method="POST" onChange={checkValid} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <input type="hidden" name="_subject" value="New Event Submission" />
+      <input type="hidden" name="_captcha" value="false" />
+      <input type="hidden" name="_template" value="table" />
+      <input type="hidden" name="_next" value="https://whatsupns.ca" />
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "20px" }}><div><label style={ls}>Event Name *</label><input name="Event Name" required placeholder="e.g. Halifax Jazz Festival" style={is(isMobile)} /></div><div><label style={ls}>Venue Name *</label><input name="Venue" required placeholder="e.g. The Carleton" style={is(isMobile)} /></div></div>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: "20px" }}><div><label style={ls}>Date(s) *</label><input name="Date" required type="date" style={is(isMobile)} /></div><div><label style={ls}>Start Time *</label><input name="Start Time" required type="time" style={is(isMobile)} /></div><div><label style={ls}>End Time</label><input name="End Time" type="time" style={is(isMobile)} /></div></div>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "20px" }}><div><label style={ls}>Full Address *</label><input name="Address" required placeholder="e.g. 1685 Argyle St, Halifax" style={is(isMobile)} /></div><div><label style={ls}>Region *</label><select name="Region" required style={{ ...is(isMobile), appearance: "auto" }}><option value="">Select</option>{REGIONS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div></div>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "20px" }}><div><label style={ls}>Category *</label><select name="Category" required style={{ ...is(isMobile), appearance: "auto" }}><option value="">Select</option>{CATEGORIES.filter(c => c.id !== "all").map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></div><div><label style={ls}>Price</label><input name="Price" placeholder="e.g. $25 or Free" style={is(isMobile)} /></div></div>
+      <div><label style={ls}>Description *</label><textarea name="Description" required placeholder="Tell people about your event..." rows={5} style={{ ...is(isMobile), resize: "vertical", fontFamily: "'DM Sans'" }} /></div>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: "20px" }}><div><label style={ls}>Organizer</label><input name="Organizer" style={is(isMobile)} /></div><div><label style={ls}>Email</label><input name="Contact Email" type="email" style={is(isMobile)} /></div><div><label style={ls}>Website</label><input name="Website" type="url" style={is(isMobile)} /></div></div>
+      <button type="submit" style={{ background: "#003366", color: "#fff", border: "none", padding: "16px 32px", borderRadius: "12px", fontFamily: "'DM Sans'", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer", marginTop: "8px", alignSelf: "flex-start" }}>Submit Event</button>
+    </form>
   </div>;
 }
 
